@@ -1,0 +1,148 @@
+{
+  "entities": {
+    "User": {
+      "title": "User",
+      "description": "System user with role-based access",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string" },
+        "email": { "type": "string", "format": "email" },
+        "role": { "type": "string", "enum": ["admin", "teacher"] },
+        "name": { "type": "string" },
+        "employeeNumber": { "type": "string" },
+        "position": { "type": "string" },
+        "assignedClassId": { "type": "string" }
+      },
+      "required": ["uid", "email", "role"]
+    },
+    "Student": {
+      "title": "Student",
+      "description": "Student record",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "email": { "type": "string", "format": "email" },
+        "grade": { "type": "string" },
+        "dob": { "type": "string", "format": "date" },
+        "enrollmentDate": { "type": "string", "format": "date" },
+        "status": { "type": "string", "enum": ["active", "inactive"] },
+        "parentContact": { "type": "string" }
+      },
+      "required": ["name", "grade", "status"]
+    },
+    "Teacher": {
+      "title": "Teacher",
+      "description": "Teacher record",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "email": { "type": "string", "format": "email" },
+        "subject": { "type": "string" },
+        "keyStage": { "type": "string" },
+        "hireDate": { "type": "string", "format": "date" }
+      },
+      "required": ["name", "email", "subject"]
+    },
+    "Class": {
+      "title": "Class",
+      "description": "A class or course",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "subject": { "type": "string" },
+        "teacherId": { "type": "string" },
+        "room": { "type": "string" }
+      },
+      "required": ["name", "subject", "teacherId"]
+    },
+    "CRLAReport": {
+      "title": "CRLA Report",
+      "description": "Comprehensive Rapid Literacy Assessment",
+      "type": "object",
+      "properties": {
+        "teacherId": { "type": "string" },
+        "classId": { "type": "string" },
+        "period": { "type": "string", "enum": ["BOSY", "MOSY", "EOSY"] },
+        "data": { "type": "object" },
+        "submittedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["teacherId", "classId", "period"]
+    },
+    "PhilIRIReport": {
+      "title": "Phil-IRI Report",
+      "description": "Philippine Informal Reading Inventory",
+      "type": "object",
+      "properties": {
+        "teacherId": { "type": "string" },
+        "classId": { "type": "string" },
+        "period": { "type": "string", "enum": ["BOSY", "MOSY"] },
+        "data": { "type": "object" },
+        "submittedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["teacherId", "classId", "period"]
+    },
+    "RMAReport": {
+      "title": "RMA Report",
+      "description": "Rapid Mathematics Assessment",
+      "type": "object",
+      "properties": {
+        "teacherId": { "type": "string" },
+        "classId": { "type": "string" },
+        "period": { "type": "string", "enum": ["BOSY", "MOSY", "EOSY"] },
+        "data": { "type": "object" },
+        "submittedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["teacherId", "classId", "period"]
+    },
+    "TermGradeReport": {
+      "title": "Term Grade Report",
+      "description": "Student grades by term",
+      "type": "object",
+      "properties": {
+        "teacherId": { "type": "string" },
+        "classId": { "type": "string" },
+        "period": { "type": "string", "enum": ["First Term", "Second Term", "Third Term"] },
+        "data": { "type": "object" },
+        "submittedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["teacherId", "classId", "period"]
+    },
+    "SkillsReport": {
+      "title": "Skills Report",
+      "description": "Mastered and Least Mastered Skills by term",
+      "type": "object",
+      "properties": {
+        "teacherId": { "type": "string" },
+        "classId": { "type": "string" },
+        "period": { "type": "string", "enum": ["First Term", "Second Term", "Third Term"] },
+        "content": { "type": "string" },
+        "submittedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["teacherId", "classId", "period"]
+    },
+    "ELAKReport": {
+      "title": "ELAK Report",
+      "description": "Enhanced Literacy Assessment for Kinder",
+      "type": "object",
+      "properties": {
+        "teacherId": { "type": "string" },
+        "classId": { "type": "string" },
+        "period": { "type": "string", "enum": ["BOSY", "MOSY", "EOSY"] },
+        "data": { "type": "object" },
+        "submittedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["teacherId", "classId", "period"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": { "schema": "User", "description": "User profiles" },
+    "/teachers/{teacherId}": { "schema": "Teacher", "description": "Teacher records" },
+    "/classes/{classId}": { "schema": "Class", "description": "Class records" },
+    "/reports_crla/{reportId}": { "schema": "CRLAReport", "description": "CRLA reports" },
+    "/reports_philiri/{reportId}": { "schema": "PhilIRIReport", "description": "Phil-IRI reports" },
+    "/reports_rma/{reportId}": { "schema": "RMAReport", "description": "RMA reports" },
+    "/reports_grades/{reportId}": { "schema": "TermGradeReport", "description": "Term grade reports" },
+    "/reports_skills/{reportId}": { "schema": "SkillsReport", "description": "Mastered and Least Mastered Skills reports" },
+    "/reports_elak/{reportId}": { "schema": "ELAKReport", "description": "ELAK reports for Kinder" }
+  }
+}

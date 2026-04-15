@@ -1,0 +1,217 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // ===============================================================
+    // Assumed Data Model
+    // ===============================================================
+    //
+    // Collection: users
+    // Fields: uid, email, role, name
+    //
+    // Collection: students
+    // Fields: name, email, grade, dob, enrollmentDate, status, parentContact
+    //
+    // Collection: teachers
+    // Fields: name, email, subject, keyStage, hireDate
+    //
+    // Collection: classes
+    // Fields: name, subject, teacherId, room
+    //
+    // Collection: attendance
+    // Fields: studentId, classId, date, status
+    //
+    // Collection: grades
+    // Fields: studentId, classId, assignment, score, maxScore, date
+    //
+    // ===============================================================
+
+    // ===============================================================
+    // Helper Functions
+    // ===============================================================
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isAdmin() {
+      return isAuthenticated() &&
+        (get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin' ||
+          ((request.auth.token.email == "clarojosh@gmail.com" || request.auth.token.email == "tagbaces112974@gmail.com") && request.auth.token.email_verified == true));
+    }
+
+    function isTeacher() {
+      return isAuthenticated() && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'teacher';
+    }
+
+    function isStaff() {
+      return isAdmin() || isTeacher();
+    }
+
+    function canAccessClass(classId) {
+      return isAdmin() || (
+        isTeacher() && 
+        'assignedClassId' in get(/databases/$(database)/documents/users/$(request.auth.uid)).data &&
+        (
+          get(/databases/$(database)/documents/classes/$(get(/databases/$(database)/documents/users/$(request.auth.uid)).data.assignedClassId)).data.grade in ['Kinder', 'Grade 1', 'Grade 2', 'Grade 3'] && 
+          get(/databases/$(database)/documents/users/$(request.auth.uid)).data.assignedClassId == classId
+        ) || (
+          get(/databases/$(database)/documents/classes/$(get(/databases/$(database)/documents/users/$(request.auth.uid)).data.assignedClassId)).data.grade == 'Grade 4' && 
+          get(/databases/$(database)/documents/classes/$(classId)).data.grade == 'Grade 4'
+        ) || (
+          get(/databases/$(database)/documents/classes/$(get(/databases/$(database)/documents/users/$(request.auth.uid)).data.assignedClassId)).data.grade in ['Grade 5', 'Grade 6'] && 
+          get(/databases/$(database)/documents/classes/$(classId)).data.grade in ['Grade 5', 'Grade 6']
+        )
+      );
+    }
+
+    function isValidUser(data) {
+      return data.keys().hasAll(['uid', 'email', 'role']) &&
+             data.uid is string &&
+             data.email is string &&
+             data.role in ['admin', 'teacher'] &&
+             (!('employeeNumber' in data) || data.employeeNumber is string) &&
+             (!('position' in data) || data.position is string) &&
+             (!('assignedClassId' in data) || data.assignedClassId is string);
+    }
+
+    function isValidClass(data) {
+      return data.keys().hasAll(['name', 'subject', 'teacherId']) &&
+             data.name is string &&
+             data.subject is string &&
+             data.teacherId is string &&
+             (!('grade' in data) || data.grade is string) &&
+             (!('keyStage' in data) || data.keyStage is string);
+    }
+
+    function isValidTeacher(data) {
+      return data.keys().hasAll(['name', 'email', 'subject']) &&
+             data.name is string &&
+             data.email is string &&
+             data.subject is string;
+    }
+
+    function isValidCRLA(data) {
+      return data.keys().hasAll(['teacherId', 'classId', 'period']) &&
+             data.teacherId is string &&
+             data.classId is string &&
+             data.period in ['BOSY', 'MOSY', 'EOSY'] &&
+             (!('grade' in data) || data.grade is string) &&
+             (!('keyStage' in data) || data.keyStage is string) &&
+             (!('subject' in data) || data.subject is string);
+    }
+
+    function isValidPhilIRI(data) {
+      return data.keys().hasAll(['teacherId', 'classId', 'period']) &&
+             data.teacherId is string &&
+             data.classId is string &&
+             data.period in ['BOSY', 'MOSY'] &&
+             (!('grade' in data) || data.grade is string) &&
+             (!('keyStage' in data) || data.keyStage is string) &&
+             (!('subject' in data) || data.subject is string);
+    }
+
+    function isValidRMA(data) {
+      return data.keys().hasAll(['teacherId', 'classId', 'period']) &&
+             data.teacherId is string &&
+             data.classId is string &&
+             data.period in ['BOSY', 'MOSY', 'EOSY'] &&
+             (!('grade' in data) || data.grade is string) &&
+             (!('keyStage' in data) || data.keyStage is string) &&
+             (!('subject' in data) || data.subject is string);
+    }
+
+    function isValidTermGrade(data) {
+      return data.keys().hasAll(['teacherId', 'classId', 'period']) &&
+             data.teacherId is string &&
+             data.classId is string &&
+             data.period in ['First Term', 'Second Term', 'Third Term'] &&
+             (!('grade' in data) || data.grade is string) &&
+             (!('keyStage' in data) || data.keyStage is string) &&
+             (!('subject' in data) || data.subject is string);
+    }
+
+    function isValidSkills(data) {
+      return data.keys().hasAll(['teacherId', 'classId', 'period']) &&
+             data.teacherId is string &&
+             data.classId is string &&
+             data.period in ['First Term', 'Second Term', 'Third Term'] &&
+             (!('grade' in data) || data.grade is string) &&
+             (!('keyStage' in data) || data.keyStage is string) &&
+             (!('subject' in data) || data.subject is string);
+    }
+
+    function isValidELAK(data) {
+      return data.keys().hasAll(['teacherId', 'classId', 'period']) &&
+             data.teacherId is string &&
+             data.classId is string &&
+             data.period in ['BOSY', 'MOSY', 'EOSY'] &&
+             (!('grade' in data) || data.grade is string) &&
+             (!('keyStage' in data) || data.keyStage is string) &&
+             (!('subject' in data) || data.subject is string);
+    }
+
+    // ===============================================================
+    // Rules
+    // ===============================================================
+
+    match /users/{userId} {
+      allow read: if isAuthenticated() && (request.auth.uid == userId || isAdmin());
+      allow create: if isAuthenticated() && (request.auth.uid == userId) && isValidUser(request.resource.data) && (request.resource.data.role == 'teacher' || isAdmin());
+      allow update: if isAuthenticated() && (request.auth.uid == userId || isAdmin()) && isValidUser(request.resource.data) && (request.resource.data.role == resource.data.role || isAdmin());
+    }
+
+    match /teachers/{teacherId} {
+      allow read: if isStaff();
+      allow create, update: if isAdmin() && isValidTeacher(request.resource.data);
+      allow delete: if isAdmin();
+    }
+
+    match /classes/{classId} {
+      allow read: if true; // Allow public read for registration and directory
+      allow create: if isAdmin() && isValidClass(request.resource.data);
+      allow update: if (isAdmin() || (isTeacher() && canAccessClass(classId))) && isValidClass(request.resource.data);
+      allow delete: if isAdmin();
+    }
+
+    match /reports_crla/{reportId} {
+      allow read: if isStaff() && canAccessClass(resource.data.classId);
+      allow create: if isStaff() && canAccessClass(request.resource.data.classId) && isValidCRLA(request.resource.data);
+      allow update: if isStaff() && canAccessClass(resource.data.classId) && isValidCRLA(request.resource.data);
+      allow delete: if isAdmin();
+    }
+
+    match /reports_philiri/{reportId} {
+      allow read: if isStaff() && canAccessClass(resource.data.classId);
+      allow create: if isStaff() && canAccessClass(request.resource.data.classId) && isValidPhilIRI(request.resource.data);
+      allow update: if isStaff() && canAccessClass(resource.data.classId) && isValidPhilIRI(request.resource.data);
+      allow delete: if isAdmin();
+    }
+
+    match /reports_rma/{reportId} {
+      allow read: if isStaff() && canAccessClass(resource.data.classId);
+      allow create: if isStaff() && canAccessClass(request.resource.data.classId) && isValidRMA(request.resource.data);
+      allow update: if isStaff() && canAccessClass(resource.data.classId) && isValidRMA(request.resource.data);
+      allow delete: if isAdmin();
+    }
+
+    match /reports_grades/{reportId} {
+      allow read: if isStaff() && canAccessClass(resource.data.classId);
+      allow create: if isStaff() && canAccessClass(request.resource.data.classId) && isValidTermGrade(request.resource.data);
+      allow update: if isStaff() && canAccessClass(resource.data.classId) && isValidTermGrade(request.resource.data);
+      allow delete: if isAdmin();
+    }
+
+    match /reports_skills/{reportId} {
+      allow read: if isStaff() && canAccessClass(resource.data.classId);
+      allow create: if isStaff() && canAccessClass(request.resource.data.classId) && isValidSkills(request.resource.data);
+      allow update: if isStaff() && canAccessClass(resource.data.classId) && isValidSkills(request.resource.data);
+      allow delete: if isAdmin();
+    }
+
+    match /reports_elak/{reportId} {
+      allow read: if isStaff() && canAccessClass(resource.data.classId);
+      allow create: if isStaff() && canAccessClass(request.resource.data.classId) && isValidELAK(request.resource.data);
+      allow update: if isStaff() && canAccessClass(resource.data.classId) && isValidELAK(request.resource.data);
+      allow delete: if isAdmin();
+    }
+  }
+}
